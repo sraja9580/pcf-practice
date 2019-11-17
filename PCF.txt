@@ -1,0 +1,86 @@
+https://run.pivotal.io
+rajaoffctran@gmail.com (8010709861)
+
+1.Login to Pivotal Account (https://api.run.pivotal.io)
+--------------------------
+	cf login (if it is not dispalying right api, provide url)
+	
+List of orgs
+-----------
+	Cf orgs
+	
+List of space in org
+--------------------	
+	cf spaces
+
+2.PUSH THE APP TO PCF WITHOUT MANIFEST
+--------------------------------------
+	cf push name_uwant jarlocation
+	cf push hello-world-api --random-route -p target/hello-world-rest-api.jar
+	check the url https://hello-world-api-balanced-cat.cfapps.io/hello-world
+	
+3. Apps details in sapce
+------------------------
+cf apps
+		name              requested state   instances   memory    disk  					 urls
+	hello-world-api   		started           1/1         1G       1G     hello-world-api-balanced-cat.cfapps.io
+	
+4.Mapping route to app
+	cf map-route app-name domain --hostname hostname
+	cf map-route hello-world-api cfapps.io --hostname hello-world-api-raja9580
+	if you check now hello-world-api mapped to 2 routes
+	check the app in hello-world-api-raja9580.cfapps.io
+	
+5. List of routes
+-----------------
+	cf routes
+		space         host                           domain      port   path   type   apps              service
+	development   hello-world-api-balanced-cat   cfapps.io                        	hello-world-api
+	development   raja9580                       cfapps.io                        	hello-world-api
+3. Logs
+-------
+	cf logs app_name
+	cf logs hello-world-api
+
+4. STOP
+-------
+	cf stop app_name
+	cf stop hello-world-api
+	
+5. START
+--------
+	cf start app_name
+	cf start hello-world-api
+	
+6. RESTART
+----------
+	cf restart app_name
+	cf restart hello-world-api
+	
+7. RESTAGE
+----------
+	cf restage app_name
+	cf restage hello-world-api
+	
+Create manifest file
+--------------------
+	when you push you might have noticed too many unwanted build packs are getting downloaded.
+	by create MANIFEST.YML file we can mention buildpack app name memory, it will be used during deployment
+   cf create-app-manifest APP_NAME -p /path/to/<app-name>_manifest.yml]
+   cf create-app-manifest hello-world-api -p manifest.yml
+	  
+	MANIFEST.YML
+	  applications:
+	- name: hello-world-api
+	  disk_quota: 1G
+	  instances: 1
+	  memory: 1G
+	  buildpacks:
+	  - https://github.com/cloudfoundry/java-buildpack.git
+	  #u need to give path or jar and manifest should be  in the same folder if u want to use cf push using manifest
+	  path: target/hello-world-rest-api.jar
+	  routes:
+	  - route: hello-world-api-balanced-cat.cfapps.io
+	  - route: raja9580.cfapps.io
+	  - route: hello-world-api-raja9580.cfapps.io
+	  stack: cflinuxfs3

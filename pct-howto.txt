@@ -1,0 +1,144 @@
+CF Push
+	Upload package (source code)
+	
+	Staging		   (Creation of droplet)	
+		1. Determine right build pack if it is not specified.
+		create image using buildpack
+		this created self contained image.
+		
+	Deployment 
+		application is deployed in Cell
+		
+		cf map-route hello-world-api cfapps.io --hostname baskarashokraj
+*******************************************************************************************************************************************
+
+Using cloud DB services from Pivotal(03-todo-web-application-mysql)
+------------------------------------
+	Login to pivotal app manager and create a service(raja-9580-cloud-db)
+	
+	List of services
+	----------------
+	cf services
+		Getting services in org raja9580 / space development as rajaoffctran@gmail.com...
+
+		name                 service   plan    bound apps   last operation     broker      upgrade available
+		raja-9580-cloud-db   cleardb   spark                create succeeded   appdirect
+		
+	Details of particular service
+	-----------------------------
+	cf service raja-9580-cloud-db
+		Showing info of service raja-9580-cloud-db in org raja9580 / space development as rajaoffctran@gmail.com...
+
+		name:             raja-9580-cloud-db
+		service:          cleardb
+		tags:
+		plan:             spark
+		description:      Highly available MySQL for your Apps.
+		documentation:    http://docs.run.pivotal.io/marketplace/services/cleardb.html
+		dashboard:        https://cloudfoundry.appdirect.com/api/custom/cloudfoundry/v2/sso/start?serviceUuid=cfd9a094-0570-4d48-bc36-c7aaf480a2ac
+		service broker:   appdirect	
+	
+	Mapping Service to App
+	----------------------
+		You can Delpoy the app and map the service in CF app manager
+		Or bind the service (raja-9580-cloud-db) via manifest.yml file, so you dont need to do manual config in CF app manger
+		
+		WHEN USING PCF SERVICES LIKE SQL SERVICE , WE DONT NEED TO CHANGE OUR CONFIG FILE.SPRING RECONFIGURE BY ITSELF WITH CLOUD SPECIFIC SERVICE DETAILS
+		****AUTO RECONFIGURATION IS BASIC IT MAY SKEEP ITEMS LIKE pool size,IN THAT CASE WE CAN PROVIVE OUR OWN CONFIG
+		https://docs.run.pivotal.io/buildpacks/java/configuring-service-connections/spring-service-bindings.html
+		
+		applications:
+		- name: my-todos-mysql
+		  disk_quota: 1G
+		  instances: 1
+		  memory: 1G
+		  buildpacks:
+		  - https://github.com/cloudfoundry/java-buildpack.git
+		  #u need to give path or jar and manifest should be  in the same folder if u want to use cf push using manifest
+		  path: target/todo-web-application-mysql.war
+		  routes:
+		  - route: my-todos-raja9580.cfapps.io   
+		  services:
+		  - raja-9580-cloud-db
+		  stack: cflinuxfs3
+
+		after cf push check the app also verify in PCF app manager database service will be mapped
+		my-todos-raja9580.cfapps.io
+		
+	App Environment Details
+	-----------------------
+		cf env appname
+		cf env my-todos-mysql
+		you will get details as below. use the hostname id and password to check if required
+		
+		 "VCAP_SERVICES": {
+		  "cleardb": [
+		   {
+			"binding_name": null,
+			"credentials": {
+			 "hostname": "us-cdbr-iron-east-05.cleardb.net",
+			 "jdbcUrl": "jdbc:mysql://us-cdbr-iron-east-05.cleardb.net/ad_df997a9965c2e2f?user=b2991c8b6a15ea\u0026password=90db814e",
+			 "name": "ad_df997a9965c2e2f",
+			 "password": "90db814e",
+			 "port": "3306",
+			 "uri": "mysql://b2991c8b6a15ea:90db814e@us-cdbr-iron-east-05.cleardb.net:3306/ad_df997a9965c2e2f?reconnect=true",
+			 "username": "b2991c8b6a15ea"
+			}]
+		 }
+******************************************************************************************************************************************
+Micro Services -Scaling- -Env Variables- (currency-exchange-service)(currency-conversion-service)
+		usename:raja pwd:test
+Description:
+		1. We will push both application to PCF
+		2. Check currency-exchange-service it will work fine
+		3. Check currency-conversion-service it will not work in PCF as it is referring localhost 
+			@FeignClient(name = "currency-exchange-service", url="${CURRENCY_EXCHANGE_URI:http://localhost:8000}")
+			public interface CurrencyExchangeServiceProxy {
+		4. Set env variable CURRENCY_EXCHANGE_URI= currency-exchange-service PCF url and restart.Now conversion-service will work fine
+		5. Scale up ie increase currency-exchange-service instance and verify currency-conversion-service
+		6. ****BY DEFAULT JAVA BUILD BACK THINGS WE ARE RUNNING BIG APP AND IT WILL ALLOCATE MIN OF 1GB ,IF WE REDUCE IT WE WILL GET ERROR
+		   WE CAN FIX IT BY CHANGI CONFIG IN MANIFEST.YML
+	Step1: 
+			push both applications
+			
+	Step2:	Check currency-exchange-service
+			currency-exchange-service-raja9580.cfapps.io/currency-exchange/from/USD/to/INR
+	
+	Step3:	Check currency-conversion-service
+			currency-conversion-service-raja9580.cfapps.io/currency-converter/from/EUR/to/INR/quantity/10
+			it will not work
+			Connection refused (Connection refused) executing GET http://localhost:8000/currency-exchange/from/EUR/to/INR
+			
+	Step4: Set currency-exchange-service PCF URL as env variable 
+		cf set-env APP_NAME ENV_VAR_NAME ENV_VAR_VALUE
+		cf set-env currency-conversion-service CURRENCY_EXCHANGE_URI currency-exchange-service-raja9580.cfapps.io
+		cf restart currency-conversion-service and check. now it will work
+	
+	Step5: Scale up (increasing currency-exchange-service instances)
+		
+		scale - Change or view the instance count, disk space limit, and memory limit for an app
+		
+		cf scale APP_NAME [-i INSTANCES] [-k DISK] [-m MEMORY] [-f]
+		 -f      Force restart of app without prompt
+		 -i      Number of instances
+		 -k      Disk limit (e.g. 256M, 1024M, 1G)
+		 -m      Memory limit (e.g. 256M, 1024M, 1G)
+		 
+		cf scale currency-exchange-service -i 2
+********************************************************************************************************************************************************
+
+Naming Server(currency-exchange-service)(currency-conversion-service)
+--------------------
+netflix-eureka-naming-server is used in local , in pcf cloud we get it as server
+
+1. Setup Eureka Server in local (in pcf it is not required)
+2. Enable Discovery in currency-exchange-service
+	<dependency>
+		<groupId>io.pivotal.spring.cloud</groupId>
+		<artifactId>spring-cloud-services-starter-service-registry</artifactId>
+	</dependency>
+2. Enable Discovery in currency-conversion-service
+	<dependency>
+		<groupId>io.pivotal.spring.cloud</groupId>
+		<artifactId>spring-cloud-services-starter-service-registry</artifactId>
+	</dependency>

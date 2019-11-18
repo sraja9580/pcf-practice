@@ -1,0 +1,14 @@
+applications:
+- name: my-todos-mysql
+  disk_quota: 1G
+  instances: 1
+  memory: 1G
+  buildpacks:
+  - https://github.com/cloudfoundry/java-buildpack.git
+  #u need to give path or jar and manifest should be  in the same folder if u want to use cf push using manifest
+  path: target/todo-web-application-mysql.war
+  routes:
+  - route: my-todos-raja9580.cfapps.io   
+  services:
+  - raja-9580-cloud-db
+  stack: cflinuxfs3

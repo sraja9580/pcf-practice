@@ -1,0 +1,18 @@
+applications:
+- name: limits-api
+  disk_quota: 300M
+  instances: 1
+  memory: 300M
+  # https://github.com/cloudfoundry/java-buildpack/issues/663
+  env:
+    JAVA_OPTS: '-XX:ReservedCodeCacheSize=32M -XX:MaxDirectMemorySize=32M'
+    JBP_CONFIG_OPEN_JDK_JRE: '[memory_calculator: {stack_threads: 30}]'
+  buildpacks:
+  - https://github.com/cloudfoundry/java-buildpack.git
+  #u need to give path or jar and manifest should be  in the same folder if u want to use cf push using manifest
+  path: target/limits-FINAL.jar
+  routes:
+  - route: limits-api-raja9580.cfapps.io   
+  services:
+  - limits-confg-server
+  stack: cflinuxfs3

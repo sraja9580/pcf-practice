@@ -1,0 +1,7 @@
+{  
+  "git":{  
+    "uri":"https://github.com/sraja9580/pcf-practice.git",
+    "label":"master",
+    "searchPaths":"config-server"
+  }
+}

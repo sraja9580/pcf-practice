@@ -1,0 +1,12 @@
+applications:
+- name: my-todos-manager
+  disk_quota: 1G
+  instances: 1
+  memory: 1G
+  buildpacks:
+  - https://github.com/cloudfoundry/java-buildpack.git
+  #u need to give path or jar and manifest should be  in the same folder if u want to use cf push using manifest
+  path: target/todo-web-application-h2.war
+  routes:
+  - route: my-todos-manager-raja9580.cfapps.io   
+  stack: cflinuxfs3
